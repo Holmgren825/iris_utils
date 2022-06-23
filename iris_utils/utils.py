@@ -19,13 +19,13 @@ def mask_from_shape(cube, shape, coord_names=("latitude", "longitude")):
     """
 
     # Does the cube contain a 3rd dimesion?
-    # TODO could probably be more than 3 dim.
+    # TODO could probably be more than 3d.
     if len(cube.shape) == 3:
         cube_spatial_dims = cube.shape[1:]
     elif len(cube.shape) < 3:
         cube_spatial_dims = cube.shape
     else:
-        raise ValueError("Cube dimension not know.")
+        raise ValueError("Not able to handle cube dimension.")
 
     # Create a meshgrid from the cube coords.
     x, y = np.meshgrid(
