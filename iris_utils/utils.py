@@ -129,25 +129,51 @@ def merge_aeq_cubes(cubes):
         return cubes.merge_cube()
 
 
-def attribute_to_aux(cubes, attribute_names=["driving_model_id", "model_id"]):
-    """Add an attribute from the cube as a scalar coordinate.
+def attribute_to_aux(
+    cubes,
+    attribute_names=[
+        "driving_model_id",
+        "model_id",
+        "driving_model_ensemble_member",
+    ],
+    missing_keys_ind=[0, 2],
+):
+    """Add any number of attributes from the cube as a scalar coordinate.
+    Useful for merging cubes.
 
     Arguments
     ---------
     cubes : iris.CubeList
         List of cubes to perform the operation on.
-    attribute_names : list(string, string)
-        List of names of the attributes to use for the new coordinate.
+    attribute_names : list
+        List of keys to the cube attributes used for the new categorical coordinate.
+        Default: driving_model_id, model_id, driving_model_ensemble_member.
+    missing_key_ind : list
+        Which indices of attribute_names to use if a cube is missing a key.
+        Generally requires some investigation of the cubes.
+        Default: 0, 2
     """
 
     # Loop over all the cubes.
-    for cube in cubes:
-        # Create a new coordinate from the attribute.
-        coord = (
-            cube.attributes[attribute_names[0]]
-            + "--"
-            + cube.attributes[attribute_names[1]]
-        )
-        new_aux_coord = iris.coords.AuxCoord(coord, var_name="model_conf")
-        # Add it to the cube.
-        cube.add_aux_coord(new_aux_coord)
+    for i, cube in enumerate(cubes):
+        # Create a new coordinate value from the attributes.
+        try:
+            # Get all the attributes.
+            new_coord_data = [cube.attributes[key] for key in attribute_names]
+            # Join them to one string, separated by --.
+            new_coord_data = "--".join(new_coord_data)
+        # If the key doesn't exist
+        except KeyError:
+            print(f"Cube {i} missing a key, skipping key.")
+            # Here we instead only select attribute names that should be available.
+            new_coord_data = [
+                cube.attributes[attribute_names[ind]] for ind in missing_keys_ind
+            ]
+            # Again, join.
+            new_coord_data = "--".join(new_coord_data)
+
+        finally:
+            # Create a new AuxCoord.
+            new_aux_coord = iris.coords.AuxCoord(new_coord_data, var_name="model_conf")
+            # Add it to the cube.
+            cube.add_aux_coord(new_aux_coord)
