@@ -69,7 +69,7 @@ def merge_aeq_cubes(cubes):
 
     # First we try and merge the cubes.
     try:
-        cubes.merge_cube()
+        return cubes.merge_cube()
 
     # If this doesn't work, we have to figure out what is wrong.
     except MergeError:
@@ -109,6 +109,16 @@ def merge_aeq_cubes(cubes):
                 # And bounds
                 cube.coord("latitude").bounds = cube0.coord("latitude").bounds.copy()
                 cube.coord("longitude").bounds = cube0.coord("longitude").bounds.copy()
+
+            # If still not matching.
+            if not cube.coord("grid_latitude") == cube0.coord("grid_latitude"):
+                # Make sure long names match
+                cube.coord("grid_latitude").long_name = cube0.coord(
+                    "grid_latitude"
+                ).long_name
+                cube.coord("grid_longitude").long_name = cube0.coord(
+                    "grid_longitude"
+                ).long_name
             # Calendar might be different as well.
             if not cube0.coord("time").units == cube.coord("time").units:
                 print("Converting calendar.")
