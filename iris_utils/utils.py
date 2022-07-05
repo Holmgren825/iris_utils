@@ -1,4 +1,5 @@
 from shapely.geometry import MultiPoint
+import cartopy.crs as ccrs
 import numpy as np
 from iris.exceptions import MergeError
 import iris
@@ -33,9 +34,22 @@ def mask_from_shape(cube, shape, coord_names=("latitude", "longitude")):
     x, y = np.meshgrid(
         cube.coord(coord_names[1]).points, cube.coord(coord_names[0]).points
     )
+    # It is likely that the shape and the cube don't share coordinate system.
+    # Hence we should make sure and convert coords of cube before selecting.
+    # We assume that shape is in PlateCarree
+    shape_projection = ccrs.PlateCarree()
+    # Get the projection of the cube as a cartopy crs.
+    cube_projection = cube.coord_system().as_cartopy_projection()
+    # Transform the cube grid to the shape projection.
+    transformed_points = shape_projection.transform_points(
+        cube_projection, x.flatten(), y.flatten()
+    )
+    # Extract the points
+    x_flat = transformed_points[:, 0]
+    y_flat = transformed_points[:, 1]
 
     # Create shapely points
-    lon_lat_points = np.vstack([x.flat, y.flat])
+    lon_lat_points = np.vstack([x_flat, y_flat])
     points = MultiPoint(lon_lat_points.T)
 
     # Check which indices are within the shapefile
