@@ -1,5 +1,7 @@
 from shapely.geometry import MultiPoint
 import cartopy.crs as ccrs
+import copy
+import dask.array as da
 import numpy as np
 from iris.exceptions import MergeError
 import iris
@@ -68,6 +70,23 @@ def mask_from_shape(cube, shape, coord_names=("latitude", "longitude")):
     return mask
 
 
+def mask_cube(cube, mask):
+    """Mask data in a cube with a boolean mask. Unlike the built in iris util,
+    this keeps the data lazy. Modifies the cube inplace.
+
+    Arguments
+    --------
+    cube : iris.cube.Cube
+        n dimensional instance of an iris cube.
+    mask : numpy.ndarray of bool
+        A n dimensional boolean array of Truth values representing points to mask
+    """
+
+    # Simply overwrite the cube data with a masked dask array.
+    # NOTE: If we don't want to do this inplace, what to we do? Copy the original cube?
+    cube.data = da.ma.masked_array(cube.core_data(), mask)
+
+
 def merge_aeq_cubes(cubes):
     """Merge almost equal cubes.
     Wrapper for CubesList.merge_cube() which first tries a normal merge_cube
@@ -108,21 +127,29 @@ def merge_aeq_cubes(cubes):
             ):
                 print("Converting coordinates.")
                 # Set the points of the candidate to the points of the base cube.
-                cube.coord("grid_latitude").points = cube0_lat_points.copy()
-                cube.coord("grid_longitude").points = cube0_lon_points.copy()
+                cube.coord("grid_latitude").points = copy.deepcopy(cube0_lat_points)
+                cube.coord("grid_longitude").points = copy.deepcopy(cube0_lon_points)
                 # And bounds
-                cube.coord("grid_latitude").bounds = cube0.coord(
-                    "grid_latitude"
-                ).bounds.copy()
-                cube.coord("grid_longitude").bounds = cube0.coord(
-                    "grid_longitude"
-                ).bounds.copy()
+                cube.coord("grid_latitude").bounds = copy.deepcopy(
+                    cube0.coord("grid_latitude").bounds
+                )
+                cube.coord("grid_longitude").bounds = copy.deepcopy(
+                    cube0.coord("grid_longitude").bounds
+                )
                 # Also have to overwrite the aux coord.
-                cube.coord("latitude").points = cube0.coord("latitude").points.copy()
-                cube.coord("longitude").points = cube0.coord("longitude").points.copy()
+                cube.coord("latitude").points = copy.deepcopy(
+                    cube0.coord("latitude").points
+                )
+                cube.coord("longitude").points = copy.deepcopy(
+                    cube0.coord("longitude").points
+                )
                 # And bounds
-                cube.coord("latitude").bounds = cube0.coord("latitude").bounds.copy()
-                cube.coord("longitude").bounds = cube0.coord("longitude").bounds.copy()
+                cube.coord("latitude").bounds = copy.deepcopy(
+                    cube0.coord("latitude").bounds
+                )
+                cube.coord("longitude").bounds = copy.deepcopy(
+                    cube0.coord("longitude").bounds
+                )
 
             # If still not matching.
             if not cube.coord("grid_latitude") == cube0.coord("grid_latitude"):
