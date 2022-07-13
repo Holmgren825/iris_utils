@@ -5,6 +5,50 @@ import dask.array as da
 import numpy as np
 from iris.exceptions import MergeError
 import iris
+import iris.analysis.cartography
+from multiprocessing import Pool
+
+
+def get_weights(cube):
+    """Get area weights for a cube, even if auxilary coordinaties are present.
+
+    Arguments
+    ---------
+    cube : iris.cube.Cube
+
+    Returns
+    -------
+    weights : array_like
+    """
+
+    #  First we try and get the weights
+    try:
+        weights = iris.analysis.cartography.area_weights(cube)
+    # If we fail it is likely due to multiple coordinates for lats and longs.
+    except ValueError as e:
+        # If we get the right message.
+        if (
+            str(e)
+            == "Calling `_get_lon_lat_coords` with multiple lat or lon coords is currently disallowed"
+        ):
+            # Copy the coords
+            lats = cube.coord("latitude").copy()
+            longs = cube.coord("longitude").copy()
+            # Then we remove them.
+            cube.remove_coord("latitude")
+            cube.remove_coord("longitude")
+            # Recurse to get the weights.
+            return get_weights(cube)
+        elif (
+            str(e)
+            == "Coordinates 'grid_latitude' and 'grid_longitude' must have bounds to determine the area weights."
+        ):
+            cube.coord("grid_latitude").guess_bounds()
+            cube.coord("grid_longitude").guess_bounds()
+            # Recursion
+            return get_weights(cube)
+
+    return weights
 
 
 def mask_from_shape(cube, shape, coord_names=("latitude", "longitude")):
