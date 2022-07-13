@@ -222,6 +222,7 @@ def attribute_to_aux(
         "driving_model_ensemble_member",
     ],
     missing_keys_ind=[0, 2],
+    new_coord_name="ens_id",
 ):
     """Add any number of attributes from the cube as a scalar coordinate.
     Useful for merging cubes.
@@ -237,6 +238,8 @@ def attribute_to_aux(
         Which indices of attribute_names to use if a cube is missing a key.
         Generally requires some investigation of the cubes.
         Default: 0, 2
+    new_coord_name : string
+        Name of the new coordinate.
     """
 
     # Loop over all the cubes.
@@ -259,6 +262,8 @@ def attribute_to_aux(
 
         finally:
             # Create a new AuxCoord.
-            new_aux_coord = iris.coords.AuxCoord(new_coord_data, var_name="model_conf")
+            new_aux_coord = iris.coords.AuxCoord(
+                new_coord_data, var_name=new_coord_name, long_name=new_coord_name
+            )
             # Add it to the cube.
             cube.add_aux_coord(new_aux_coord)
