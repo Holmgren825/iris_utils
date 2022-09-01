@@ -1,12 +1,13 @@
-from shapely.geometry import MultiPoint
-import cartopy.crs as ccrs
 import copy
+from multiprocessing import Pool
+
+import cartopy.crs as ccrs
 import dask.array as da
-import numpy as np
-from iris.exceptions import MergeError
 import iris
 import iris.analysis.cartography
-from multiprocessing import Pool
+import numpy as np
+from iris.exceptions import MergeError
+from shapely.geometry import MultiPoint
 
 
 def get_weights(cube):
