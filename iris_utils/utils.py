@@ -268,3 +268,26 @@ def attribute_to_aux(
             )
             # Add it to the cube.
             cube.add_aux_coord(new_aux_coord)
+
+
+def make_lazy(cube, inplace=True):
+    """Make cube lazy again. This is useful since climix only accepts cubes with lazy data.
+
+    Arguments:
+    ----------
+    cube : iris.cube.Cube
+        The cube to make lazy.
+    inplace : bool, default: True
+        Modify the cube inplace.
+    """
+    if inplace:
+        data = cube.data
+        cube.data = da.asarray(data)
+        # This should work.
+        return
+    else:
+        new_cube = cube.copy()
+        data = new_cube.data
+        new_cube.data = da.asarray(data)
+
+        return new_cube
