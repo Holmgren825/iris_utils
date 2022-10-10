@@ -254,28 +254,30 @@ def attribute_to_aux(
     # Loop over all the cubes.
     for i, cube in enumerate(cubes):
         # Create a new coordinate value from the attributes.
-        try:
-            # Get all the attributes.
-            new_coord_data = [cube.attributes[key] for key in attribute_names]
-            # Join them to one string, separated by --.
-            new_coord_data = "--".join(new_coord_data)
-        # If the key doesn't exist
-        except KeyError:
-            print(f"Cube {i} missing a key, skipping key.")
-            # Here we instead only select attribute names that should be available.
-            new_coord_data = [
-                cube.attributes[attribute_names[ind]] for ind in missing_keys_ind
-            ]
-            # Again, join.
-            new_coord_data = "--".join(new_coord_data)
+        if isinstance(attribute_names, list):
+            try:
+                # Get all the attributes.
+                new_coord_data = [cube.attributes[key] for key in attribute_names]
+                # Join them to one string, separated by --.
+                new_coord_data = "--".join(new_coord_data)
+            # If the key doesn't exist
+            except KeyError:
+                print(f"Cube {i} missing a key, skipping key.")
+                # Here we instead only select attribute names that should be available.
+                new_coord_data = [
+                    cube.attributes[attribute_names[ind]] for ind in missing_keys_ind
+                ]
+                # Again, join.
+                new_coord_data = "--".join(new_coord_data)
+        else:
+            new_coord_data = cube.attributes[attribute_names]
 
-        finally:
-            # Create a new AuxCoord.
-            new_aux_coord = iris.coords.AuxCoord(
-                new_coord_data, var_name=new_coord_name, long_name=new_coord_name
-            )
-            # Add it to the cube.
-            cube.add_aux_coord(new_aux_coord)
+        # Create a new AuxCoord.
+        new_aux_coord = iris.coords.AuxCoord(
+            new_coord_data, var_name=new_coord_name, long_name=new_coord_name
+        )
+        # Add it to the cube.
+        cube.add_aux_coord(new_aux_coord)
 
 
 def make_lazy(cube, inplace=True):
