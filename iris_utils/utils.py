@@ -52,7 +52,9 @@ def get_weights(cube):
     return weights
 
 
-def mask_from_shape(cube, shape, coord_names=("latitude", "longitude")):
+def mask_from_shape(
+    cube, shape, coord_system=True, coord_names=("latitude", "longitude")
+):
     """Create a iris cube compatible mask from a polygon.
 
     Arguemnts
@@ -61,6 +63,8 @@ def mask_from_shape(cube, shape, coord_names=("latitude", "longitude")):
         Iris cube to create the mask for.
     shape : shapely.geometry.polygon.Polygon.
         Shapefile outlining the region to use as a mask.
+    coord_system : bool, default: True
+        Does the cube have a coordinate system?
     coord_names : tuple(string, string)
         Names of latitude and longitude in cube. Default to "latitude" and "longitude".
     Returns
@@ -81,19 +85,23 @@ def mask_from_shape(cube, shape, coord_names=("latitude", "longitude")):
     x, y = np.meshgrid(
         cube.coord(coord_names[1]).points, cube.coord(coord_names[0]).points
     )
-    # It is likely that the shape and the cube don't share coordinate system.
-    # Hence we should make sure and convert coords of cube before selecting.
-    # We assume that shape is in PlateCarree
-    shape_projection = ccrs.PlateCarree()
-    # Get the projection of the cube as a cartopy crs.
-    cube_projection = cube.coord_system().as_cartopy_projection()
-    # Transform the cube grid to the shape projection.
-    transformed_points = shape_projection.transform_points(
-        cube_projection, x.flatten(), y.flatten()
-    )
-    # Extract the points
-    x_flat = transformed_points[:, 0]
-    y_flat = transformed_points[:, 1]
+    if coord_system:
+        # It is likely that the shape and the cube don't share coordinate system.
+        # Hence we should make sure and convert coords of cube before selecting.
+        # We assume that shape is in PlateCarree
+        shape_projection = ccrs.PlateCarree()
+        # Get the projection of the cube as a cartopy crs.
+        cube_projection = cube.coord_system().as_cartopy_projection()
+        # Transform the cube grid to the shape projection.
+        transformed_points = shape_projection.transform_points(
+            cube_projection, x.flatten(), y.flatten()
+        )
+        # Extract the points
+        x_flat = transformed_points[:, 0]
+        y_flat = transformed_points[:, 1]
+    else:
+        x_flat = x.flatten()
+        y_flat = y.flatten()
 
     # Create shapely points
     lon_lat_points = np.vstack([x_flat, y_flat])
