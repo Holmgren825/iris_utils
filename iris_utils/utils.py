@@ -219,6 +219,11 @@ def merge_aeq_cubes(cubes):
                 # Convert the calendar of the candidate cube to the base cube.
                 cube.coord("time").convert_units(cube0.coord("time").units)
 
+            # Cell method might be wrong.
+            if not cube.cell_methods == cube0.cell_methods:
+                print("Changing cell_methods")
+                cube.cell_methods = copy.deepcopy(cube0.cell_methods)
+
         # With this done we try to merge the list again.
         return cubes.merge_cube()
 
