@@ -11,7 +11,7 @@ from shapely.geometry import MultiPoint
 
 
 def get_weights(cube):
-    """Get area weights for a cube, even if auxilary coordinaties are present.
+    """Get area weights for a cube, even if auxiliary coordinaties are present.
 
     Arguments
     ---------

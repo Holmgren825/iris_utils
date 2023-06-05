@@ -14,7 +14,16 @@ PARAM_CONV = {
         "Minimum": "tasmin",
         "Average": "tas",
     },
+    "Nederbördsmängd" : {
+        "standard_name" : "precipitation_amount", # Is this correct? Could be flux as well, but maybe not from Mora.
+        "Summa": "pr"
+        }
 }
+
+UNIT_CONV = {
+        "kelvin": "kelvin",
+        "kilogram per kvadratmeter": "kg m-2"
+        }
 
 
 def load_df(file_path: str) -> pd.DataFrame:
@@ -42,6 +51,9 @@ def load_df(file_path: str) -> pd.DataFrame:
             # Find station name
             if re.match(r"Station name[^,]+", prev_line):
                 found_attrs["station_name"] = line.split(";")[0]
+                found_attrs["latitude"] = line.split(";")[1][1:-1]
+                found_attrs["longitude"] = line.split(";")[2][1:-1]
+                found_attrs["altitude"] = line.split(";")[3][1:-1]
             if group := re.match(r"Parameter;\"([^,]+)\"", line):
                 found_attrs["parameter"] = group.groups()[0]
             if group := re.match(r"Unit, database;\"([^,]+)\"", line):
@@ -79,17 +91,27 @@ def cube_from_mora_csv(file_path: str) -> iris.cube.Cube:
     """
     df = load_df(file_path)
 
+    cube = cube_from_mora_df(df)
+    return cube
+
+
+def cube_from_mora_df(df: pd.DataFrame) -> iris.cube.Cube:
+
     # TODO This does not work for all stations for some unknown reason.
     # cube = iris.pandas.as_cubes(
     #     df, aux_coord_cols=["Represents"], ancillary_variable_cols=["Quality"]
     # )
-    cube = iris.pandas.as_cubes(df)
+    cube: iris.cube.Cube = iris.pandas.as_cubes(df)
     cube = cube[3]
 
     cube.standard_name = PARAM_CONV[df.attrs["parameter"]]["standard_name"]
     cube.var_name = PARAM_CONV[df.attrs["parameter"]][df.attrs["var_name"]]
-    cube.units = df.attrs["unit"]
+    cube.units = UNIT_CONV[df.attrs["unit"]]
     cube.attributes["station_name"] = df.attrs["station_name"]
+    lat = iris.coords.AuxCoord(float(df.attrs["latitude"]), "latitude")
+    lon = iris.coords.AuxCoord(float(df.attrs["longitude"]), "longitude")
+    cube.add_aux_coord(lat)
+    cube.add_aux_coord(lon)
     cube.data = cube.lazy_data()
 
     return cube
